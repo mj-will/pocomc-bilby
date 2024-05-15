@@ -13,6 +13,7 @@ class PocoMC(bilby.core.sampler.Sampler):
 
     See the documentation for details: https://pocomc.readthedocs.io/
     """
+    sampler_name = "pocomc"
     default_kwargs = dict(
         n_particles=1000,
         threshold=1.0,
@@ -52,3 +53,10 @@ class PocoMC(bilby.core.sampler.Sampler):
         self.result.log_evidence = results["logz"][-1]
 
         return self.result
+
+    @classmethod
+    def get_expected_outputs(cls, outdir=None, label=None):
+        filenames = [
+            "pocomc_plot.png",
+        ]
+        return filenames, []
