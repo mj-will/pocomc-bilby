@@ -1,5 +1,6 @@
 import bilby
 import inspect
+import numpy as np
 import os
 import pocomc
 
@@ -9,6 +10,13 @@ from .prior import PriorWrapper
 def _log_likelihood_wrapper(theta):
     """Wrapper to the log likelihood. Needed for multiprocessing."""
     from bilby.core.sampler.base_sampler import _sampling_convenience_dump
+
+    theta = {
+        key: theta[ii]
+        for ii, key in enumerate(_sampling_convenience_dump.search_parameter_keys)
+    }
+
+    _sampling_convenience_dump.likelihood.parameters.update(theta)
 
     if _sampling_convenience_dump.use_ratio:
         return _sampling_convenience_dump.likelihood.log_likelihood_ratio()
@@ -71,6 +79,7 @@ class PocoMC(bilby.core.sampler.Sampler):
         )
 
         self._setup_pool()
+        pool = self.kwargs.pop("pool", None)
 
         sampler = pocomc.Sampler(
             prior=prior,
@@ -79,7 +88,7 @@ class PocoMC(bilby.core.sampler.Sampler):
             output_label=self.label,
             output_dir=output_dir,
             n_dim=self.ndim,
-            pool=self.pool,
+            pool=pool,
             **init_kwargs,
         )
 
@@ -95,4 +104,5 @@ class PocoMC(bilby.core.sampler.Sampler):
         self.result.samples = posterior_samples
         self.result.log_evidence = logz
         self.result.log_evidence_error = logz_err
+        self.result.num_likelihood_evaluations = np.sum(sampler.results["calls"])
         return self.result
