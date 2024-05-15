@@ -1,7 +1,4 @@
-"""An example of how to implement a sampler plugin in for bilby.
-
-This package provides the 'demo_sampler' sampler.
-"""
+"""Bilby sampler plugin for PocoMC"""
 from importlib.metadata import PackageNotFoundError, version
 
 try:

@@ -3,9 +3,9 @@ requires = ["setuptools>=45", "setuptools-scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "demo_sampler_bilby"
+name = "pocomc-bilby"
 authors = [
-    {name = "your name", email = "your@email.com"},
+    {name = "Michael J. Williams", email = "michaeljw1@googlemail.com"},
 ]
 description = ""
 readme = "README.md"
@@ -17,6 +17,7 @@ classifiers = [
 dependencies = [
     "bilby",
     "numpy",
+    "pocomc<1.0",
 ]
 
 dynamic = ["version"]
@@ -32,4 +33,4 @@ test = [
 line-length = 79
 
 [project.entry-points."bilby.samplers"]
-demo_sampler = "demo_sampler_bilby.plugin:DemoSampler"
+pocomc = "pocomc_bilby.plugin:PocoMC"

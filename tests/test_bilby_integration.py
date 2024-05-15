@@ -29,9 +29,8 @@ def bilby_priors():
 
 @pytest.fixture()
 def sampler_kwargs():
-    # Any keyword arguments that need to be set of you want to test
     return dict(
-        ninitial=100,
+        n_particles=100,
     )
 
 
@@ -41,6 +40,7 @@ def test_run_sampler(bilby_likelihood, bilby_priors, tmp_path, sampler_kwargs):
     bilby.run_sampler(
         likelihood=bilby_likelihood,
         priors=bilby_priors,
-        sampler="demo_sampler",    # This should match the name of the sampler
+        sampler="pocomc",
         outdir=outdir,
+        **sampler_kwargs,
     )
