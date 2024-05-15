@@ -31,6 +31,7 @@ def bilby_priors():
 def sampler_kwargs():
     return dict(
         n_particles=100,
+        n_max=10,
     )
 
 
