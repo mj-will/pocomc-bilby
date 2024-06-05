@@ -8,5 +8,5 @@ Bilby sampler plugin for pocomc.
 ```
 pip install pococmc-bilby
 ```
-Note: this plugin only supports `pocomc<1.0`.
+Note: this plugin only supports `pocomc>=1.0`.
 
