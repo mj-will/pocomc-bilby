@@ -1,7 +1,9 @@
 import bilby
+from bilby.core.utils.log import logger
 import inspect
 import numpy as np
 import os
+from pathlib import Path
 import pocomc
 
 from .prior import PriorWrapper
@@ -59,12 +61,14 @@ class PocoMC(bilby.core.sampler.Sampler):
             for key, param in params.items()
             if param.default != param.empty
         }
+        kwargs["save_every"] = 5
         return kwargs
 
     @property
     def default_kwargs(self):
         kwargs = self.init_kwargs
         kwargs.update(self.run_kwargs)
+        kwargs["resume"] = True
         return kwargs
 
     def run_sampler(self):
@@ -74,12 +78,13 @@ class PocoMC(bilby.core.sampler.Sampler):
 
         prior = PriorWrapper(self.priors, self.search_parameter_keys)
 
-        output_dir = os.path.join(
-            self.outdir, f"{self.sampler_name}_{self.label}", "",
-        )
+        output_dir = \
+            Path(self.outdir) / f"{self.sampler_name}_{self.label}" / ""
+        os.makedirs(output_dir, exist_ok=True)
 
         self._setup_pool()
         pool = self.kwargs.pop("pool", None)
+        resume = self.kwargs.pop("resume", False)
 
         sampler = pocomc.Sampler(
             prior=prior,
@@ -91,6 +96,17 @@ class PocoMC(bilby.core.sampler.Sampler):
             pool=pool,
             **init_kwargs,
         )
+
+        if resume and run_kwargs["resume_state_path"] is None:
+            files = output_dir.glob("*.state")
+            t_values = [int(file.stem.split("_")[-1]) for file in files]
+            if len(t_values):
+                t_max = max(t_values)
+                state_path = output_dir / f"{self.label}_{t_max}.state"
+                logger.info(f"Resuming pocomc from: {state_path}")
+                run_kwargs["resume_state_path"] = state_path
+            else:
+                logger.debug("No files to resume from")
 
         sampler.run(**run_kwargs)
 
