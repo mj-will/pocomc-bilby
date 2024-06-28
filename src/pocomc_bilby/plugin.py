@@ -41,7 +41,6 @@ class PocoMC(bilby.core.sampler.Sampler):
             for key, param in params.items()
             if param.default != param.empty
         }
-        kwargs["n_active"] = 1000
         not_allowed = [
             "vectorize",
             "output_dir",
