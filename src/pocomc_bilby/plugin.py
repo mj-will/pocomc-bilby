@@ -120,5 +120,5 @@ class PocoMC(bilby.core.sampler.Sampler):
         self.result.samples = posterior_samples
         self.result.log_evidence = logz
         self.result.log_evidence_error = logz_err
-        self.result.num_likelihood_evaluations = np.sum(sampler.results["calls"])
+        self.result.num_likelihood_evaluations = sampler.results["calls"][-1]
         return self.result
