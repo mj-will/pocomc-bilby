@@ -30,6 +30,8 @@ class PocoMC(bilby.core.sampler.Sampler):
     """Wrapper for pocomc.
 
     See the documentation for details: https://pocomc.readthedocs.io/
+
+    Outputs from the sampler will be saved in :code:`<outdir>/pocomc_<label>/.
     """
     sampler_name = "pocomc"
 
@@ -41,7 +43,6 @@ class PocoMC(bilby.core.sampler.Sampler):
             for key, param in params.items()
             if param.default != param.empty
         }
-        kwargs["n_active"] = 1000
         not_allowed = [
             "vectorize",
             "output_dir",
@@ -70,6 +71,15 @@ class PocoMC(bilby.core.sampler.Sampler):
         kwargs.update(self.run_kwargs)
         kwargs["resume"] = True
         return kwargs
+    
+    def _verify_kwargs_against_default_kwargs(self):
+        super()._verify_kwargs_against_default_kwargs()
+        n_active = self.kwargs.get("n_active")
+        n_effective = self.kwargs.get("n_effective")
+        if n_active >= n_effective:
+            logger.warning(
+                "Running with n_active > n_effective is not recommended"
+            )
 
     def run_sampler(self):
 
@@ -80,7 +90,7 @@ class PocoMC(bilby.core.sampler.Sampler):
 
         output_dir = \
             Path(self.outdir) / f"{self.sampler_name}_{self.label}" / ""
-        os.makedirs(output_dir, exist_ok=True)
+        output_dir.mkdir(parents=True, exist_ok=True)
 
         self._setup_pool()
         pool = self.kwargs.pop("pool", None)
@@ -113,6 +123,7 @@ class PocoMC(bilby.core.sampler.Sampler):
         samples, weights, logl, logp = sampler.posterior()
         logz, logz_err = sampler.evidence()
 
+        # Want i.i.d samples without duplicates
         posterior_samples = bilby.core.result.rejection_sample(
             samples, weights
         )
@@ -120,5 +131,5 @@ class PocoMC(bilby.core.sampler.Sampler):
         self.result.samples = posterior_samples
         self.result.log_evidence = logz
         self.result.log_evidence_error = logz_err
-        self.result.num_likelihood_evaluations = np.sum(sampler.results["calls"])
+        self.result.num_likelihood_evaluations = sampler.results["calls"][-1]
         return self.result
