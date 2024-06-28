@@ -90,7 +90,7 @@ class PocoMC(bilby.core.sampler.Sampler):
 
         output_dir = \
             Path(self.outdir) / f"{self.sampler_name}_{self.label}" / ""
-        output_dir.mkdir(exist_ok=True)
+        output_dir.mkdir(parents=True, exist_ok=True)
 
         self._setup_pool()
         pool = self.kwargs.pop("pool", None)
