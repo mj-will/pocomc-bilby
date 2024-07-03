@@ -1,7 +1,9 @@
 import bilby
 import numpy as np
 import pytest
+from unittest.mock import create_autospec, patch
 
+import pocomc
 from pocomc_bilby.prior import PriorWrapper
 
 
@@ -32,7 +34,9 @@ def bilby_priors():
 @pytest.fixture()
 def sampler_kwargs():
     return dict(
-        n_active=1000,
+        n_active=100,
+        n_effective=200,
+        n_total=200,
     )
 
 
@@ -58,3 +62,25 @@ def test_run_sampler(bilby_likelihood, bilby_priors, tmp_path, sampler_kwargs):
         outdir=outdir,
         **sampler_kwargs,
     )
+
+
+def test_random_seed(bilby_likelihood, bilby_priors, tmp_path, sampler_kwargs):
+    outdir = tmp_path / "test_run_sampler"
+    mock_sampler = create_autospec(pocomc.Sampler)
+    # Skip the rest of the function by raising an error we can catch
+    mock_sampler.run.side_effect = RuntimeError("Skipping rest of function")
+    with (
+        patch(
+            "pocomc.Sampler", autospec=True, return_value=mock_sampler
+        ) as mock_init,
+        pytest.raises(RuntimeError, match="Skipping rest of function"),
+    ):
+        bilby.run_sampler(
+            likelihood=bilby_likelihood,
+            priors=bilby_priors,
+            sampler="pocomc",
+            outdir=outdir,
+            seed=1234,
+            **sampler_kwargs,
+        )
+    assert mock_init.call_args.kwargs["random_state"] == 1234
