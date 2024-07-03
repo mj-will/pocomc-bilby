@@ -35,6 +35,8 @@ class PocoMC(bilby.core.sampler.Sampler):
     """
     sampler_name = "pocomc"
 
+    sampling_seed_key = "random_state"
+
     @property
     def init_kwargs(self):
         params = inspect.signature(pocomc.Sampler).parameters
