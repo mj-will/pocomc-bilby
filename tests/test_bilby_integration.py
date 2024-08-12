@@ -64,6 +64,24 @@ def test_run_sampler(bilby_likelihood, bilby_priors, tmp_path, sampler_kwargs):
     )
 
 
+def test_run_sampler_pool(
+    bilby_likelihood, bilby_priors, tmp_path, sampler_kwargs
+):
+    from  multiprocessing.dummy import Pool
+
+    outdir = tmp_path / "test_run_sampler_pool"
+
+    with patch("multiprocessing.Pool", new=Pool):
+        bilby.run_sampler(
+            likelihood=bilby_likelihood,
+            priors=bilby_priors,
+            sampler="pocomc",
+            outdir=outdir,
+            npool=2,
+            **sampler_kwargs,
+        )
+
+
 def test_random_seed(bilby_likelihood, bilby_priors, tmp_path, sampler_kwargs):
     outdir = tmp_path / "test_run_sampler"
     mock_sampler = create_autospec(pocomc.Sampler)
