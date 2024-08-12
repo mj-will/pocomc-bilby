@@ -145,6 +145,8 @@ class PocoMC(bilby.core.sampler.Sampler):
             samples, weights
         )
 
+        self._close_pool()
+
         self.result.samples = posterior_samples
         self.result.log_evidence = logz
         self.result.log_evidence_error = logz_err
