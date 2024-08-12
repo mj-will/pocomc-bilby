@@ -72,8 +72,23 @@ class PocoMC(bilby.core.sampler.Sampler):
         kwargs = self.init_kwargs
         kwargs.update(self.run_kwargs)
         kwargs["resume"] = True
+        kwargs["npool"] = None
         return kwargs
-    
+
+    def _translate_kwargs(self, kwargs):
+        """Translate the keyword arguments"""
+        if "npool" not in kwargs:
+            for equiv in self.npool_equiv_kwargs:
+                if equiv in kwargs:
+                    kwargs["npool"] = kwargs.pop(equiv)
+                    break
+            # If nothing was found, set to npool but only if it is larger
+            # than 1
+            else:
+                if self._npool > 1:
+                    kwargs["npool"] = self._npool
+        super()._translate_kwargs(kwargs)
+
     def _verify_kwargs_against_default_kwargs(self):
         super()._verify_kwargs_against_default_kwargs()
         n_active = self.kwargs.get("n_active")
