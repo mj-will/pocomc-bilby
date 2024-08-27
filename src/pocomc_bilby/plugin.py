@@ -51,6 +51,8 @@ class PocoMC(bilby.core.sampler.Sampler):
             "output_label",
             "n_dim",
             "pool",
+            "reflective",  # Set automatically
+            "periodic",    # Set automatically
         ]
         for key in not_allowed:
             kwargs.pop(key)
@@ -98,6 +100,17 @@ class PocoMC(bilby.core.sampler.Sampler):
                 "Running with n_active > n_effective is not recommended"
             )
 
+    def _get_pocomc_boundaries(self, key):
+        # Based on the equivalent method for dynesty
+        selected = list()
+        for ii, param in enumerate(self.search_parameter_keys):
+            if self.priors[param].boundary == key:
+                logger.debug(f"Setting {key} boundary for {param}")
+                selected.append(ii)
+        if len(selected) == 0:
+            selected = None
+        return selected
+
     def run_sampler(self):
 
         init_kwargs = {k: self.kwargs.get(k) for k in self.init_kwargs.keys()}
@@ -112,6 +125,10 @@ class PocoMC(bilby.core.sampler.Sampler):
         self._setup_pool()
         pool = self.kwargs.pop("pool", None)
         resume = self.kwargs.pop("resume", False)
+
+        # Set the boundary conditions
+        for key in ["reflective", "periodic"]:
+            init_kwargs[key] = self._get_pocomc_boundaries(key)
 
         sampler = pocomc.Sampler(
             prior=prior,
