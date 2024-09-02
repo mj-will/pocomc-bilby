@@ -17,7 +17,7 @@ classifiers = [
 dependencies = [
     "bilby>=2.3.0",
     "numpy",
-    "pocomc>=1.0",
+    "pocomc>=1.2.3",
 ]
 
 dynamic = ["version"]
