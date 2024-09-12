@@ -41,7 +41,7 @@ def _log_likelihood_wrapper_with_constraints(theta):
         for ii, key in enumerate(_sampling_convenience_dump.search_parameter_keys)
     }
 
-    if not _sampling_convenience_dump.prior.evaluate_constraints(theta):
+    if not _sampling_convenience_dump.priors.evaluate_constraints(theta):
         return -np.inf
     _sampling_convenience_dump.likelihood.parameters.update(theta)
 
