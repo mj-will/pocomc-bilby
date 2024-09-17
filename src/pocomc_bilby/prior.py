@@ -25,7 +25,7 @@ class PriorWrapper(Prior):
 
     rvs = None
     """Function for drawing random samples from the prior.
-    
+
     Is set when the class is initialized to either based on the value of
     :code:`evaluate_constraints`.
     """
@@ -57,13 +57,15 @@ class PriorWrapper(Prior):
 
     def _logpdf_with_constraints(self, x):
         x_dict = self.to_dict(x)
-        return (
-            self.bilby_priors.ln_prob(x_dict, axis=0)
-            + np.log(self.bilby_priors.evaluate_constraints(x_dict))
-        )
+        # The priors already include the constraints
+        return self.bilby_priors.ln_prob(x_dict, axis=0)
 
     def _logpdf_without_constraints(self, x):
-        return self.bilby_priors.ln_prob(self.to_dict(x), axis=0)
+        x_dict = self.to_dict(x)
+        return np.sum(
+            [self.bilby_priors[key].ln_prob(x_dict[key]) for key in x_dict],
+            axis=0,
+        )
 
     def _rvs_with_constraints(self, size=1):
         return self.from_dict(
