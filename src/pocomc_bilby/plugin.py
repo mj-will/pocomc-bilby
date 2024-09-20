@@ -2,7 +2,6 @@ import bilby
 from bilby.core.utils.log import logger
 import inspect
 import numpy as np
-import os
 from pathlib import Path
 import pocomc
 
@@ -10,7 +9,12 @@ from .prior import PriorWrapper
 
 
 def _log_likelihood_wrapper(theta):
-    """Wrapper to the log likelihood. Needed for multiprocessing."""
+    """Wrapper to the log likelihood.
+
+    Does not evaluate the prior constraints.
+
+    Needed for multiprocessing.
+    """
     from bilby.core.sampler.base_sampler import _sampling_convenience_dump
 
     theta = {
@@ -26,12 +30,43 @@ def _log_likelihood_wrapper(theta):
         return _sampling_convenience_dump.likelihood.log_likelihood()
 
 
+def _log_likelihood_wrapper_with_constraints(theta):
+    """Wrapper to the log likelihood that evaluates the prior constraints.
+
+    Needed for multiprocessing."""
+    from bilby.core.sampler.base_sampler import _sampling_convenience_dump
+
+    theta = {
+        key: theta[ii]
+        for ii, key in enumerate(_sampling_convenience_dump.search_parameter_keys)
+    }
+
+    if not _sampling_convenience_dump.priors.evaluate_constraints(theta):
+        return -np.inf
+    _sampling_convenience_dump.likelihood.parameters.update(theta)
+
+    if _sampling_convenience_dump.use_ratio:
+        return _sampling_convenience_dump.likelihood.log_likelihood_ratio()
+    else:
+        return _sampling_convenience_dump.likelihood.log_likelihood()
+
+
 class PocoMC(bilby.core.sampler.Sampler):
     """Wrapper for pocomc.
 
     See the documentation for details: https://pocomc.readthedocs.io/
 
     Outputs from the sampler will be saved in :code:`<outdir>/pocomc_<label>/.
+
+    This implementation includes an additional option,
+    :code:`evaluate_constraints_in_prior`, that determines if the prior
+    prior constraints are evaluated when computing the log-likelihood
+    (:code:`False`) or when evaluating the log-prior(:code:`True`).
+
+    Some settings are automatically set based on the the bilby likelihood and
+    prior that are provided.
+
+    Supports multiprocessing via the bilby-supplied pool.
     """
     sampler_name = "pocomc"
 
@@ -56,6 +91,7 @@ class PocoMC(bilby.core.sampler.Sampler):
         ]
         for key in not_allowed:
             kwargs.pop(key)
+        kwargs["evaluate_constraints_in_prior"] = True
         return kwargs
 
     @property
@@ -111,12 +147,27 @@ class PocoMC(bilby.core.sampler.Sampler):
             selected = None
         return selected
 
+    @staticmethod
+    def _get_log_likelihood_fn(evaluate_constraints):
+        if evaluate_constraints:
+            return _log_likelihood_wrapper_with_constraints
+        else:
+            return _log_likelihood_wrapper
+
     def run_sampler(self):
 
         init_kwargs = {k: self.kwargs.get(k) for k in self.init_kwargs.keys()}
         run_kwargs = {k: self.kwargs.get(k) for k in self.run_kwargs.keys()}
 
-        prior = PriorWrapper(self.priors, self.search_parameter_keys)
+        evaluate_constraints_in_prior = init_kwargs.pop(
+            "evaluate_constraints_in_prior",
+        )
+
+        prior = PriorWrapper(
+            self.priors,
+            self.search_parameter_keys,
+            evaluate_constraints=evaluate_constraints_in_prior,
+        )
 
         output_dir = \
             Path(self.outdir) / f"{self.sampler_name}_{self.label}" / ""
@@ -132,7 +183,7 @@ class PocoMC(bilby.core.sampler.Sampler):
 
         sampler = pocomc.Sampler(
             prior=prior,
-            likelihood=_log_likelihood_wrapper,
+            likelihood=self._get_log_likelihood_fn(not evaluate_constraints_in_prior),
             vectorize=False,
             output_label=self.label,
             output_dir=output_dir,

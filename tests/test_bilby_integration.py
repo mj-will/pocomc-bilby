@@ -8,7 +8,15 @@ from pocomc_bilby.prior import PriorWrapper
 
 
 def model(x, m, c):
+    if (abs(m) + abs(c)) > 5.0:
+        raise ValueError(f"Invalid values: {m}, {c}")
     return m * x + c
+
+
+def conversion_func(parameters):
+    # d = |m| + |c|
+    parameters["d"] = abs(parameters["m"]) + abs(parameters["c"])
+    return parameters
 
 
 @pytest.fixture()
@@ -25,9 +33,10 @@ def bilby_likelihood():
 
 @pytest.fixture()
 def bilby_priors():
-    priors = bilby.core.prior.PriorDict()
+    priors = bilby.core.prior.PriorDict(conversion_function=conversion_func)
     priors["m"] = bilby.core.prior.Uniform(0, 5, boundary="periodic")
     priors["c"] = bilby.core.prior.Uniform(-2, 2, boundary="reflective")
+    priors["d"] = bilby.core.prior.Constraint(name="d", minimum=0, maximum=5)
     return priors
 
 
@@ -40,10 +49,19 @@ def sampler_kwargs():
     )
 
 
-@pytest.mark.parametrize("n", [1, 10])
-def test_prior(bilby_priors, n):
+@pytest.fixture(params=[True, False])
+def evaluate_constraints_in_prior(request):
+    return request.param
 
-    prior = PriorWrapper(bilby_priors, bilby_priors.non_fixed_keys)
+
+@pytest.mark.parametrize("n", [1, 10])
+def test_prior(bilby_priors, n, evaluate_constraints_in_prior):
+
+    prior = PriorWrapper(
+        bilby_priors,
+        bilby_priors.non_fixed_keys,
+        evaluate_constraints=evaluate_constraints_in_prior,
+    )
 
     x = prior.rvs(n)
     assert x.shape == (n, 2)
@@ -52,7 +70,13 @@ def test_prior(bilby_priors, n):
     assert len(log_prob) == n
 
 
-def test_run_sampler(bilby_likelihood, bilby_priors, tmp_path, sampler_kwargs):
+def test_run_sampler(
+    bilby_likelihood,
+    bilby_priors,
+    tmp_path,
+    sampler_kwargs,
+    evaluate_constraints_in_prior,
+):
     outdir = tmp_path / "test_run_sampler"
 
     bilby.run_sampler(
@@ -60,12 +84,17 @@ def test_run_sampler(bilby_likelihood, bilby_priors, tmp_path, sampler_kwargs):
         priors=bilby_priors,
         sampler="pocomc",
         outdir=outdir,
+        evaluate_constraints_in_prior=evaluate_constraints_in_prior,
         **sampler_kwargs,
     )
 
 
 def test_run_sampler_pool(
-    bilby_likelihood, bilby_priors, tmp_path, sampler_kwargs
+    bilby_likelihood,
+    bilby_priors,
+    tmp_path,
+    sampler_kwargs,
+    evaluate_constraints_in_prior,
 ):
     from  multiprocessing.dummy import Pool
 
@@ -78,6 +107,7 @@ def test_run_sampler_pool(
             sampler="pocomc",
             outdir=outdir,
             npool=2,
+            evaluate_constraints_in_prior=evaluate_constraints_in_prior,
             **sampler_kwargs,
         )
 
