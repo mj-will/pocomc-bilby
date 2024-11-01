@@ -1,9 +1,12 @@
 import bilby
+from bilby.core.sampler.base_sampler import signal_wrapper
 from bilby.core.utils.log import logger
+import datetime
 import inspect
 import numpy as np
 from pathlib import Path
 import pocomc
+import time
 
 from .prior import PriorWrapper
 
@@ -58,10 +61,16 @@ class PocoMC(bilby.core.sampler.Sampler):
 
     Outputs from the sampler will be saved in :code:`<outdir>/pocomc_<label>/.
 
-    This implementation includes an additional option,
-    :code:`evaluate_constraints_in_prior`, that determines if the prior
+    This implementation includes some additional keyword arguments:
+
+    - :code:`evaluate_constraints_in_prior`, that determines if the prior
     prior constraints are evaluated when computing the log-likelihood
     (:code:`False`) or when evaluating the log-prior(:code:`True`).
+
+    - :code:`track_sampling_time`, that determines if the total sampling time
+    is tracked and saved in a file. The file is saved in the same output
+    directory as the sampler outputs. If false, the sampling time reported in
+    the result file will not account for checkpointing.
 
     Some settings are automatically set based on the the bilby likelihood and
     prior that are provided.
@@ -106,11 +115,21 @@ class PocoMC(bilby.core.sampler.Sampler):
         return kwargs
 
     @property
+    def time_file_path(self):
+        """Path to the file that stores the total sampling time."""
+        return (
+            Path(self.outdir)
+            / f"{self.sampler_name}_{self.label}"
+            / "sampling_time.dat"
+        )
+
+    @property
     def default_kwargs(self):
         kwargs = self.init_kwargs
         kwargs.update(self.run_kwargs)
         kwargs["resume"] = True
         kwargs["npool"] = None
+        kwargs["track_sampling_time"] = False
         return kwargs
 
     def _translate_kwargs(self, kwargs):
@@ -154,8 +173,10 @@ class PocoMC(bilby.core.sampler.Sampler):
         else:
             return _log_likelihood_wrapper
 
+    @signal_wrapper
     def run_sampler(self):
 
+        self.track_sampling_time = self.kwargs.pop("track_sampling_time", False)
         init_kwargs = {k: self.kwargs.get(k) for k in self.init_kwargs.keys()}
         run_kwargs = {k: self.kwargs.get(k) for k in self.run_kwargs.keys()}
 
@@ -181,6 +202,16 @@ class PocoMC(bilby.core.sampler.Sampler):
         for key in ["reflective", "periodic"]:
             init_kwargs[key] = self._get_pocomc_boundaries(key)
 
+        if resume and run_kwargs["resume_state_path"] is None:
+            resume_state_path = self._find_resume_state_path(output_dir)
+            if resume_state_path is not None:
+                logger.info(f"Resuming pocomc from: {resume_state_path}")
+                run_kwargs["resume_state_path"] = resume_state_path
+            else:
+                logger.debug("No files to resume from")
+        self._check_and_load_sampling_time(resume=resume)
+        self.start_time = time.time()
+
         sampler = pocomc.Sampler(
             prior=prior,
             likelihood=self._get_log_likelihood_fn(not evaluate_constraints_in_prior),
@@ -192,17 +223,6 @@ class PocoMC(bilby.core.sampler.Sampler):
             **init_kwargs,
         )
 
-        if resume and run_kwargs["resume_state_path"] is None:
-            files = output_dir.glob("*.state")
-            t_values = [int(file.stem.split("_")[-1]) for file in files]
-            if len(t_values):
-                t_max = max(t_values)
-                state_path = output_dir / f"{self.label}_{t_max}.state"
-                logger.info(f"Resuming pocomc from: {state_path}")
-                run_kwargs["resume_state_path"] = state_path
-            else:
-                logger.debug("No files to resume from")
-
         sampler.run(**run_kwargs)
 
         samples, weights, logl, logp = sampler.posterior()
@@ -212,11 +232,74 @@ class PocoMC(bilby.core.sampler.Sampler):
         posterior_samples = bilby.core.result.rejection_sample(
             samples, weights
         )
-
+        if self.track_sampling_time:
+            self._calculate_and_save_sampling_time()
         self._close_pool()
 
         self.result.samples = posterior_samples
         self.result.log_evidence = logz
-        self.result.log_evidence_error = logz_err
+        self.result.log_evidence_err = logz_err
         self.result.num_likelihood_evaluations = sampler.results["calls"][-1]
+        if self.track_sampling_time:
+            self.result.sampling_time = datetime.timedelta(
+                seconds=self.total_sampling_time
+            )
         return self.result
+
+    def _find_resume_state_path(self, output_dir):
+        """Find the state file to resume from.
+
+        If the final state file is found, it is used. Otherwise, the state file
+        with the largest t value is used.
+        """
+        files = list(output_dir.glob("*.state"))
+        for file in files:
+            if "final" in file.stem:
+                logger.info("Found final state file")
+                return file
+        t_values = [int(file.stem.split("_")[-1]) for file in files]
+        if len(t_values):
+            t_max = max(t_values)
+            state_path = output_dir / f"{self.label}_{t_max}.state"
+            return state_path
+        else:
+            return None
+
+    def _check_and_load_sampling_time(self, resume: bool = False):
+        """Check if the sampling time file exists and load the total
+        sampling time.
+
+        If resume is False, the total sampling time is set to 0.0 and any
+        existing sampling time file is overwritten.
+        """
+        if not resume:
+            self.total_sampling_time = 0.0
+            if self.time_file_path.exists():
+                logger.debug("Overwriting existing sampling time file")
+                with open(self.time_file_path, "w") as f:
+                    f.write(f"{self.total_sampling_time}\n")
+        else:
+            if self.time_file_path.exists():
+                with open(self.time_file_path, "r") as time_file:
+                    self.total_sampling_time = float(time_file.readline())
+            else:
+                self.total_sampling_time = 0.0
+
+    def _calculate_and_save_sampling_time(self):
+        current_time = time.time()
+        new_sampling_time = current_time - self.start_time
+        self.total_sampling_time += new_sampling_time
+        with open(self.time_file_path, "w") as f:
+            f.write(f"{self.total_sampling_time}\n")
+        self.start_time = time.time()
+
+    def write_current_state(self):
+        # Can currently manually checkpoint pocomc
+        pass
+
+    def write_current_state_and_exit(self, signum=None, frame=None):
+        # We implement this here since we want to log the information
+        # irrespective of the state of the pool.
+        if self.track_sampling_time:
+            self._calculate_and_save_sampling_time()
+        super().write_current_state_and_exit(signum=signum, frame=frame)
