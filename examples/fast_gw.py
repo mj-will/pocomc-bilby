@@ -95,7 +95,7 @@ result = bilby.run_sampler(
     injection_parameters=injection_parameters,
     outdir=outdir,
     label=label,
-    n_pool=4,    # pocomc supports multiprocessing
+    n_pool=4,  # pocomc supports multiprocessing
 )
 
 result.plot_corner()
