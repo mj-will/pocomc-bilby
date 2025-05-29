@@ -1,3 +1,6 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15543647.svg)](https://doi.org/10.5281/zenodo.15543647)
+[![PyPI](https://img.shields.io/pypi/v/pocomc-bilby)](https://pypi.org/project/pocomc-bilby/)
+
 # pocomc-bilby
 
 `pocomc` plugin for `bilby`.
@@ -8,7 +11,10 @@ see the [`pocomc` documentation](https://pocomc.readthedocs.io/en/latest/index.h
 
 ## Installation
 
-`pocomc-bilby` is can be installed via `pip`
+**Note:** since `pocomc` depends on `torch` we recommend installing it first using
+the instructions on the [PyTorch website](https://pytorch.org/).
+
+`pocomc-bilby` is can be installed via `pip`:
 
 ```
 pip install pococmc-bilby
@@ -44,6 +50,6 @@ This plugin is also compatible with `bilby_pipe`, including support for checkpoi
 
 ## Attribution & Citation
 
-If you use `pocomc-bilby` in your own work please cite the DOI for this package, corresponding paper (to be added) and the
+If you use `pocomc-bilby` in your own work please cite the [DOI for this package](https://doi.org/10.5281/zenodo.15543647), corresponding paper (to be added) and the
 citations for `pocomc`,
 see [Attribution & Citation in the `pocomc` documentation](https://pocomc.readthedocs.io/en/latest/index.html#attribution-citation)
