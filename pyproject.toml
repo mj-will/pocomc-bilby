@@ -7,7 +7,7 @@ name = "pocomc-bilby"
 authors = [
     {name = "Michael J. Williams", email = "michaeljw1@googlemail.com"},
 ]
-description = ""
+description = "pocomc plugin for bilby"
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
