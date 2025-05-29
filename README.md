@@ -33,7 +33,7 @@ bilby.run_sampler(
 )
 ```
 
-`pocomc` has two different types of settings, those specified when initializing the 
+`pocomc` has two different types of settings, those specified when initializing the
 sampler and those specified when calling the `run` method. When using `pocomc` via
 `bilby` both types of settings can be passed to `run_sampler` and these will automatically
 be passed to the correct method.

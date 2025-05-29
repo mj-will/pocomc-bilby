@@ -1,12 +1,13 @@
-import bilby
-from bilby.core.sampler.base_sampler import signal_wrapper
-from bilby.core.utils.log import logger
 import datetime
 import inspect
-import numpy as np
-from pathlib import Path
-import pocomc
 import time
+from pathlib import Path
+
+import bilby
+import numpy as np
+import pocomc
+from bilby.core.sampler.base_sampler import signal_wrapper
+from bilby.core.utils.log import logger
 
 from .prior import PriorWrapper
 
@@ -22,7 +23,9 @@ def _log_likelihood_wrapper(theta):
 
     theta = {
         key: theta[ii]
-        for ii, key in enumerate(_sampling_convenience_dump.search_parameter_keys)
+        for ii, key in enumerate(
+            _sampling_convenience_dump.search_parameter_keys
+        )
     }
 
     _sampling_convenience_dump.likelihood.parameters.update(theta)
@@ -41,7 +44,9 @@ def _log_likelihood_wrapper_with_constraints(theta):
 
     theta = {
         key: theta[ii]
-        for ii, key in enumerate(_sampling_convenience_dump.search_parameter_keys)
+        for ii, key in enumerate(
+            _sampling_convenience_dump.search_parameter_keys
+        )
     }
 
     if not _sampling_convenience_dump.priors.evaluate_constraints(theta):
@@ -77,6 +82,7 @@ class PocoMC(bilby.core.sampler.Sampler):
 
     Supports multiprocessing via the bilby-supplied pool.
     """
+
     sampler_name = "pocomc"
 
     sampling_seed_key = "random_state"
@@ -96,7 +102,7 @@ class PocoMC(bilby.core.sampler.Sampler):
             "n_dim",
             "pool",
             "reflective",  # Set automatically
-            "periodic",    # Set automatically
+            "periodic",  # Set automatically
         ]
         for key in not_allowed:
             kwargs.pop(key)
@@ -175,8 +181,9 @@ class PocoMC(bilby.core.sampler.Sampler):
 
     @signal_wrapper
     def run_sampler(self):
-
-        self.track_sampling_time = self.kwargs.pop("track_sampling_time", False)
+        self.track_sampling_time = self.kwargs.pop(
+            "track_sampling_time", False
+        )
         init_kwargs = {k: self.kwargs.get(k) for k in self.init_kwargs.keys()}
         run_kwargs = {k: self.kwargs.get(k) for k in self.run_kwargs.keys()}
 
@@ -190,8 +197,9 @@ class PocoMC(bilby.core.sampler.Sampler):
             evaluate_constraints=evaluate_constraints_in_prior,
         )
 
-        output_dir = \
+        output_dir = (
             Path(self.outdir) / f"{self.sampler_name}_{self.label}" / ""
+        )
         output_dir.mkdir(parents=True, exist_ok=True)
 
         self._setup_pool()
@@ -214,7 +222,9 @@ class PocoMC(bilby.core.sampler.Sampler):
 
         sampler = pocomc.Sampler(
             prior=prior,
-            likelihood=self._get_log_likelihood_fn(not evaluate_constraints_in_prior),
+            likelihood=self._get_log_likelihood_fn(
+                not evaluate_constraints_in_prior
+            ),
             vectorize=False,
             output_label=self.label,
             output_dir=output_dir,

@@ -4,6 +4,7 @@ Example of performing GW inference with pocomc.
 
 This example is on the 'fast_tutorial.py' from bilby.
 """
+
 import bilby
 
 # Set up the parameters for the simulated data
