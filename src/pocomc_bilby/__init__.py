@@ -1,4 +1,5 @@
 """Bilby sampler plugin for PocoMC"""
+
 from importlib.metadata import PackageNotFoundError, version
 
 try:

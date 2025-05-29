@@ -4,7 +4,7 @@
 
 This package provides a plugin for using `pocomc` with `bilby` via the [sampler plugins interface](https://bilby-dev.github.io/bilby/plugins.html#sampler-plugins). `pocomc` is Sequential Monte Carlo sampler
 that implements a specific flavour of SMC called [Persistent Sampling](https://arxiv.org/abs/2407.20722). For more details,
-see the [`pocomc` documentation].
+see the [`pocomc` documentation](https://pocomc.readthedocs.io/en/latest/index.html).
 
 ## Installation
 
@@ -33,7 +33,7 @@ bilby.run_sampler(
 )
 ```
 
-`pocomc` has two different types of settings, those specified when initializing the 
+`pocomc` has two different types of settings, those specified when initializing the
 sampler and those specified when calling the `run` method. When using `pocomc` via
 `bilby` both types of settings can be passed to `run_sampler` and these will automatically
 be passed to the correct method.

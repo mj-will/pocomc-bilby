@@ -1,9 +1,10 @@
-import bilby
-import numpy as np
-import pytest
 from unittest.mock import create_autospec, patch
 
+import bilby
+import numpy as np
 import pocomc
+import pytest
+
 from pocomc_bilby.prior import PriorWrapper
 
 
@@ -56,7 +57,6 @@ def evaluate_constraints_in_prior(request):
 
 @pytest.mark.parametrize("n", [1, 10])
 def test_prior(bilby_priors, n, evaluate_constraints_in_prior):
-
     prior = PriorWrapper(
         bilby_priors,
         bilby_priors.non_fixed_keys,
@@ -96,7 +96,7 @@ def test_run_sampler_pool(
     sampler_kwargs,
     evaluate_constraints_in_prior,
 ):
-    from  multiprocessing.dummy import Pool
+    from multiprocessing.dummy import Pool
 
     outdir = tmp_path / "test_run_sampler_pool"
 
