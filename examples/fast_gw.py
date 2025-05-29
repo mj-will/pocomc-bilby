@@ -6,17 +6,18 @@ This example is on the 'fast_tutorial.py' from bilby.
 """
 import bilby
 
-
+# Set up the parameters for the simulated data
 duration = 4.0
 sampling_frequency = 2048.0
 minimum_frequency = 20
 
 outdir = "outdir"
-label = "fast_tutorial"
+label = "pocomc_example"
 bilby.core.utils.setup_logger(outdir=outdir, label=label)
 
 bilby.core.utils.random.seed(88170235)
 
+# Define the injection parameters, this is a GW150914-like injection
 injection_parameters = dict(
     mass_1=36.0,
     mass_2=29.0,
@@ -35,6 +36,7 @@ injection_parameters = dict(
     dec=-1.2108,
 )
 
+# Define the waveform generator
 waveform_arguments = dict(
     waveform_approximant="IMRPhenomPv2",
     reference_frequency=50.0,
@@ -59,7 +61,9 @@ ifos.inject_signal(
     waveform_generator=waveform_generator, parameters=injection_parameters
 )
 
+# Define the priors
 priors = bilby.gw.prior.BBHPriorDict()
+# Fix various parameters to reduce the dimensionality of the problem
 for key in [
     "a_1",
     "a_2",
@@ -77,10 +81,12 @@ for key in [
 
 priors.validate_prior(duration, minimum_frequency)
 
+# Define the likelihood
 likelihood = bilby.gw.GravitationalWaveTransient(
     interferometers=ifos, waveform_generator=waveform_generator
 )
 
+# Run pocomc
 result = bilby.run_sampler(
     likelihood=likelihood,
     priors=priors,
@@ -89,7 +95,7 @@ result = bilby.run_sampler(
     injection_parameters=injection_parameters,
     outdir=outdir,
     label=label,
-    n_pool=4,    # pocomc supports multiprocessing
+    n_pool=4,  # pocomc supports multiprocessing
 )
 
 result.plot_corner()
