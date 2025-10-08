@@ -5,6 +5,7 @@ from pathlib import Path
 
 import bilby
 import numpy as np
+import pandas as pd
 import pocomc
 from bilby.core.sampler.base_sampler import signal_wrapper
 from bilby.core.utils.log import logger
@@ -238,6 +239,11 @@ class PocoMC(bilby.core.sampler.Sampler):
         samples, weights, logl, logp = sampler.posterior()
         logz, logz_err = sampler.evidence()
 
+        # Include the log likelihood and log prior in the samples
+        # so that we can populate the result object correctly
+        samples = pd.DataFrame(samples, columns=self.search_parameter_keys)
+        samples["log_likelihood"] = logl
+        samples["log_prior"] = logp
         # Want i.i.d samples without duplicates
         posterior_samples = bilby.core.result.rejection_sample(
             samples, weights
@@ -246,7 +252,15 @@ class PocoMC(bilby.core.sampler.Sampler):
             self._calculate_and_save_sampling_time()
         self._close_pool()
 
-        self.result.samples = posterior_samples
+        self.result.samples = posterior_samples.drop(
+            columns=["log_likelihood", "log_prior"]
+        ).values
+        self.result.log_likelihood_evaluations = posterior_samples[
+            "log_likelihood"
+        ].values
+        self.result.log_prior_evaluations = posterior_samples[
+            "log_prior"
+        ].values
         self.result.log_evidence = logz
         self.result.log_evidence_err = logz_err
         self.result.num_likelihood_evaluations = sampler.results["calls"][-1]
