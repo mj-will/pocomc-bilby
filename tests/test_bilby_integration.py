@@ -52,7 +52,6 @@ def sampler_kwargs(precondition):
         n_active=100,
         n_effective=200,
         n_total=200,
-        precondition=precondition,
     )
 
 
@@ -82,6 +81,7 @@ def test_run_sampler(
     tmp_path,
     sampler_kwargs,
     evaluate_constraints_in_prior,
+    precondition,
 ):
     outdir = tmp_path / "test_run_sampler"
 
@@ -91,6 +91,7 @@ def test_run_sampler(
         sampler="pocomc",
         outdir=outdir,
         evaluate_constraints_in_prior=evaluate_constraints_in_prior,
+        precondition=precondition,
         **sampler_kwargs,
     )
 
