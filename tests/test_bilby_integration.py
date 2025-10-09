@@ -47,7 +47,7 @@ def precondition(request):
 
 
 @pytest.fixture()
-def sampler_kwargs(precondition):
+def sampler_kwargs():
     return dict(
         n_active=100,
         n_effective=200,
