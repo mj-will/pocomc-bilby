@@ -239,6 +239,9 @@ class PocoMC(bilby.core.sampler.Sampler):
         samples, weights, logl, logp = sampler.posterior()
         logz, logz_err = sampler.evidence()
 
+        if logz_err is None:
+            logz_err = np.nan
+
         # Include the log likelihood and log prior in the samples
         # so that we can populate the result object correctly
         samples = pd.DataFrame(samples, columns=self.search_parameter_keys)
