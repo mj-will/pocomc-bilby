@@ -41,12 +41,18 @@ def bilby_priors():
     return priors
 
 
+@pytest.fixture(params=[True, False])
+def precondition(request):
+    return request.param
+
+
 @pytest.fixture()
-def sampler_kwargs():
+def sampler_kwargs(precondition):
     return dict(
         n_active=100,
         n_effective=200,
         n_total=200,
+        precondition=precondition,
     )
 
 
