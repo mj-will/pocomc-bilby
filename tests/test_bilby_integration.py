@@ -41,6 +41,11 @@ def bilby_priors():
     return priors
 
 
+@pytest.fixture(params=[True, False])
+def precondition(request):
+    return request.param
+
+
 @pytest.fixture()
 def sampler_kwargs():
     return dict(
@@ -76,6 +81,7 @@ def test_run_sampler(
     tmp_path,
     sampler_kwargs,
     evaluate_constraints_in_prior,
+    precondition,
 ):
     outdir = tmp_path / "test_run_sampler"
 
@@ -85,6 +91,7 @@ def test_run_sampler(
         sampler="pocomc",
         outdir=outdir,
         evaluate_constraints_in_prior=evaluate_constraints_in_prior,
+        precondition=precondition,
         **sampler_kwargs,
     )
 
