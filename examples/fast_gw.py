@@ -5,7 +5,11 @@ Example of performing GW inference with pocomc.
 This example is on the 'fast_tutorial.py' from bilby.
 """
 
+import os
+
 import bilby
+
+os.environ["OMP_NUM_THREADS"] = "1"  # Prevent lalsuite from using all threads
 
 # Set up the parameters for the simulated data
 duration = 4.0
@@ -92,7 +96,8 @@ result = bilby.run_sampler(
     likelihood=likelihood,
     priors=priors,
     sampler="pocomc",
-    n_active=1000,
+    n_active=500,
+    n_effective=1000,
     injection_parameters=injection_parameters,
     outdir=outdir,
     label=label,
