@@ -1,12 +1,14 @@
 import datetime
 import inspect
 import time
+from copy import deepcopy
 from pathlib import Path
 
 import bilby
 import numpy as np
 import pandas as pd
 import pocomc
+from bilby.core.likelihood import _safe_likelihood_call
 from bilby.core.sampler.base_sampler import signal_wrapper
 from bilby.core.utils.log import logger
 
@@ -28,13 +30,14 @@ def _log_likelihood_wrapper(theta):
             _sampling_convenience_dump.search_parameter_keys
         )
     }
+    params = deepcopy(_sampling_convenience_dump.parameters)
+    params.update(theta)
 
-    _sampling_convenience_dump.likelihood.parameters.update(theta)
-
-    if _sampling_convenience_dump.use_ratio:
-        return _sampling_convenience_dump.likelihood.log_likelihood_ratio()
-    else:
-        return _sampling_convenience_dump.likelihood.log_likelihood()
+    return _safe_likelihood_call(
+        _sampling_convenience_dump.likelihood,
+        params,
+        _sampling_convenience_dump.use_ratio,
+    )
 
 
 def _log_likelihood_wrapper_with_constraints(theta):
@@ -50,14 +53,17 @@ def _log_likelihood_wrapper_with_constraints(theta):
         )
     }
 
+    params = deepcopy(_sampling_convenience_dump.parameters)
+    params.update(theta)
+
     if not _sampling_convenience_dump.priors.evaluate_constraints(theta):
         return -np.inf
-    _sampling_convenience_dump.likelihood.parameters.update(theta)
 
-    if _sampling_convenience_dump.use_ratio:
-        return _sampling_convenience_dump.likelihood.log_likelihood_ratio()
-    else:
-        return _sampling_convenience_dump.likelihood.log_likelihood()
+    return _safe_likelihood_call(
+        _sampling_convenience_dump.likelihood,
+        params,
+        _sampling_convenience_dump.use_ratio,
+    )
 
 
 class PocoMC(bilby.core.sampler.Sampler):
