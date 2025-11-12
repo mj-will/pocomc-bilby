@@ -8,11 +8,22 @@ import bilby
 import numpy as np
 import pandas as pd
 import pocomc
-from bilby.core.likelihood import _safe_likelihood_call
 from bilby.core.sampler.base_sampler import signal_wrapper
 from bilby.core.utils.log import logger
 
 from .prior import PriorWrapper
+
+# Support bilby<2.7
+try:
+    from bilby.core.likelihood import _safe_likelihood_call
+except ImportError:
+
+    def _safe_likelihood_call(likelihood, params, use_ratio):
+        """Fallback definition for bilby versions that do not have
+        _safe_likelihood_call.
+        """
+        likelihood.parameters.update(params)
+        return likelihood.log_likelihood()
 
 
 def _log_likelihood_wrapper(theta):
@@ -30,8 +41,12 @@ def _log_likelihood_wrapper(theta):
             _sampling_convenience_dump.search_parameter_keys
         )
     }
-    params = deepcopy(_sampling_convenience_dump.parameters)
-    params.update(theta)
+    # bilby<2.7 compatibility
+    try:
+        params = deepcopy(_sampling_convenience_dump.parameters)
+        params.update(theta)
+    except AttributeError:
+        params = theta
 
     return _safe_likelihood_call(
         _sampling_convenience_dump.likelihood,
@@ -52,9 +67,12 @@ def _log_likelihood_wrapper_with_constraints(theta):
             _sampling_convenience_dump.search_parameter_keys
         )
     }
-
-    params = deepcopy(_sampling_convenience_dump.parameters)
-    params.update(theta)
+    # bilby<2.7 compatibility
+    try:
+        params = deepcopy(_sampling_convenience_dump.parameters)
+        params.update(theta)
+    except AttributeError:
+        params = theta
 
     if not _sampling_convenience_dump.priors.evaluate_constraints(theta):
         return -np.inf
