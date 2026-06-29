@@ -14,10 +14,10 @@ see the [`pocomc` documentation](https://pocomc.readthedocs.io/en/latest/index.h
 **Note:** since `pocomc` depends on `torch` we recommend installing it first using
 the instructions on the [PyTorch website](https://pytorch.org/).
 
-`pocomc-bilby` is can be installed via `pip`:
+`pocomc-bilby` can be installed via `pip`:
 
 ```
-pip install pococmc-bilby
+pip install pocomc-bilby
 ```
 
 **Note:** this plugin only supports `pocomc>=1.2.6`.
@@ -50,6 +50,6 @@ This plugin is also compatible with `bilby_pipe`, including support for checkpoi
 
 ## Attribution & Citation
 
-If you use `pocomc-bilby` in your own work please cite the [DOI for this package](https://doi.org/10.5281/zenodo.15543647), corresponding paper (to be added) and the
+If you use `pocomc-bilby` in your own work please cite the [DOI for this package](https://doi.org/10.5281/zenodo.15543647), [corresponding paper](https://arxiv.org/abs/2506.18977) and the
 citations for `pocomc`,
 see [Attribution & Citation in the `pocomc` documentation](https://pocomc.readthedocs.io/en/latest/index.html#attribution-citation)
